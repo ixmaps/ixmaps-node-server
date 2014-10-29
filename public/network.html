@@ -1,0 +1,45 @@
+<!doctype html>
+<meta charset="utf-8">
+
+<script src="http://www.d3plus.org/js/d3.js"></script>
+<script src="http://www.d3plus.org/js/d3plus.js"></script>
+<script src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+
+<div id="viz"></div>
+
+<script>
+
+$(function() {
+  $.ajax({
+    dataType: "json",
+    url: '/api/traces',
+    success: doNetwork
+  });
+});
+
+var hopHash = {};
+
+function doNetwork(json) {
+  var data = [], connections = [];
+  json.allHops.forEach(function(hop) {
+    var h = {name : hop.from, size: 0};
+    data.push(h);
+    hopHash[hop.from] = h;
+  });
+  json.allHops.forEach(function(hop) {
+    connections.push({source : hop.from, target: hop.to});
+    if (hop.to) {
+      hopHash[hop.to].size = hopHash[hop.to].size + 1;
+    }
+  });
+  console.log(json, 'data', data, 'connections', connections);
+  var visualization = d3plus.viz()
+    .container("#viz")
+    .type("network")
+    .data(data)
+    .edges(connections)
+    .size("size")
+    .id("name")
+    .draw();
+}
+</script>
