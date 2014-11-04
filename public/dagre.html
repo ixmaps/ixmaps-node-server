@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- saved from url=(0081)http://cpettitt.github.io/project/dagre-d3/latest/demo/sentence-tokenization.html -->
 <html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta charset="utf-8">
-<title>Dagre D3 Demo: Sentence Tokenization</title>
+<title>Dagre D3 Traceroues</title>
 <link rel="stylesheet" href="http://cpettitt.github.io/project/dagre-d3/latest/demo/demo.css">
 <script src="./lib/d3.v3.min.js" charset="utf-8"></script>
 <script src="./lib/dagre-d3.js"></script>
@@ -60,13 +60,17 @@ $(function() {
       hops = json.allHops[traceID];
       for (var i = 0; i < hops.length; i++) {
         hop = hops[i];
+      console.log(traceID, hop);
         g.setNode(hop.ip, { label: hop.ip, class: 'hop'});
         if (i > 0) {
           g.setEdge(hops[i - 1].ip, hop.ip);
         }
       }
       g.setNode(traceID, {label: shorten(traceID), class: 'dest' });
-      g.setEdge(hop.ip, traceID);
+      // Probably failed DNS lookup
+      if (hop) {
+        g.setEdge(hop.ip, traceID);
+      }
     }
 
     g.nodes().forEach(function(v) {
