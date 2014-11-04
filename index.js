@@ -12,6 +12,7 @@ var router = express.Router();
 var bodyParser = require('body-parser');
 var fs = require('fs');
 var markdown = require( "markdown" ).markdown;
+var querystring = require('querystring');
 
 var dePost = bodyParser.json();
 var traceroute = require('./lib/traceroute');
@@ -94,33 +95,73 @@ function processQueue() {
     console.log('processing', nextHost.command, nextHost.domain, 'doProcess', doProcess, 'remaining', state.queuedHosts.length);
     if (doProcess) {
       // used to link hops
-      var hops = [], traceID = destination + '@' + new Date().getTime();
+      var traceID = destination + '@' + new Date().getTime();
 
       // process the hops returned by traceroute
-      var processHops = function(err, hop) {
+      var processHops = function(err, hopRes) {
+        var hops = [];
+        console.log('hops', JSON.stringify(hopRes));
         if (!err) {
-          if (hop) {
-            var ip = Object.keys(hop)[0];
-            hops.push({ ip: ip, roundTrips: hop[ip] });
-          }
+          hopRes.forEach(function(hop) {
+            if (hop) {
+              var ip = Object.keys(hop)[0];
+              hops.push({ ip: ip, roundTrips: hop[ip] });
+            }
+          });
         } else {
           console.log('err', err);
         }
+        doneTrace(err, hops);
       },
       // reset state and wait for another process
-      doneTrace = function() {
+      doneTrace = function(err, hops) {
         state.allHops[traceID] = hops;
         console.log('allHops', Object.keys(state.allHops).length);
         state.processingHost = false;
+        sendTrace(hops, nextHost);
+
         setTimeout(processQueue, 100);
       };
 
       state.processingHost = new Date().getTime();
       state.processedHosts[destination] = new Date().getTime();
-    	traceroute.stream(destination, processHops, doneTrace, { command : nextHost.command, args: nextHost.args});
+    	traceroute.trace(nextHost, processHops);
       return;
     }
   }
   // nothing to process, wait around
   setTimeout(processQueue, 100);
+}
+
+// Transmit a completed hop
+function sendTrace(hops, details) {
+  var t = {
+    dest: details.domain,
+    dest_ip: details.address,
+    submitter:details.submitter,
+    zip_code:details.postalcode,
+    client:'ixnode',
+    cl_ver: 0,
+    privacy:8,
+    timeout:1,
+    protocol:'i',
+    maxhops:255,
+    attempts:4,
+    status:'c'
+  };
+
+  for (var h = 0; h < hops.length; h++) {
+    var cid = (h + 1) + '_1', hop = hops[h];
+    t['status_' + cid] = 'r';
+    t['ip_addr_' + cid] = hop.ip;
+    if (hop.roundTrips) {
+      for (var r = 0; r < hop.roundTrips.length; r++) {
+        var rid = cid + '_' + (r + 1);
+        t['rtt_ms_' + rid] = hop.roundTrips[r];
+      }
+    }
+  }
+
+  t.n_items = hops.length;
+  console.log('***', JSON.stringify(t, null, 2), querystring.stringify(t));
 }
