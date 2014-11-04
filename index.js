@@ -133,7 +133,7 @@ function processQueue() {
   setTimeout(processQueue, 100);
 }
 
-// Transmit a completed hop
+// Transmit a completed trace
 function sendTrace(hops, details) {
   var t = {
     dest: details.domain,
