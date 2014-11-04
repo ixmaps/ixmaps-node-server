@@ -1,8 +1,10 @@
 {
   "name": "ixmaps-node-server",
   "version": "0.0.5",
+  "scripts" : {
+    "start" : "node index.js"
+  },
   "description": "",
-  "main": "index.js",
   "dependencies": {
     "body-parser": "^1.9.2",
     "express": "^4.9.7",
