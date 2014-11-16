@@ -33,7 +33,7 @@ var state = {
   processingHost : false
 };
 
-app.use(express.static(__dirname + '/public'));
+app.use(express.static('./public'));
 
 // log the request
 router.use(function(req, res, next) {
