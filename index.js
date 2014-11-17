@@ -5,6 +5,7 @@
 /* jslint node: true */
 'use strict';
 
+var http = require('http');
 var express = require('express');
 var app = express();
 var port = process.env.PORT || 8181;
@@ -19,6 +20,9 @@ var traceroute = require('./lib/traceroute');
 var requests = require('./lib/requests');
 // when to refresh checked hosts (10 minutes)
 var RECHECK_SECONDS = 600 * 1000;
+var SUBMIT_URI = 'http://ixmaps.ca/cgi-bin/gather-tr.cgi';
+var TRID_PREFIX = 'new traceroute ID=';
+var ERROR_PREFIX = 'ERROR';
 
 // state variables
 var state = {
@@ -115,10 +119,15 @@ function processQueue() {
       },
       // reset state and wait for another process
       doneTrace = function(err, hops) {
-        state.allHops[traceID] = hops;
         console.log('allHops', Object.keys(state.allHops).length);
         state.processingHost = false;
-        sendTrace(hops, nextHost);
+        sendTrace(hops, nextHost, function(err, res) {
+          if (err) {
+            console.log('sendTrace failed', err);
+            res = { sendTraceFailed: err};
+          }
+          state.allHops[traceID] = { result: res, hops: hops};
+        });
 
         setTimeout(processQueue, 100);
       };
@@ -134,10 +143,10 @@ function processQueue() {
 }
 
 // Transmit a completed trace
-function sendTrace(hops, details) {
+function sendTrace(hops, details, cb) {
   var t = {
     dest: details.domain,
-    dest_ip: details.address,
+    dest_ip: details.dest_ip,
     submitter:details.submitter,
     zip_code:details.postalcode,
     client:'ixnode',
@@ -163,5 +172,35 @@ function sendTrace(hops, details) {
   }
 
   t.n_items = hops.length;
-  console.log('***', JSON.stringify(t, null, 2), querystring.stringify(t));
+//  console.log('***', JSON.stringify(t, null, 2), querystring.stringify(t));
+  submitTR(SUBMIT_URI + '?' + querystring.stringify(t), function(err, res) {
+    var trid, subError;
+    if (err) {
+      console.log('tr submission failed', err);
+    } else {
+      if (res.indexOf(ERROR_PREFIX) > -1) {
+        subError = res.split(ERROR_PREFIX)[1].split('\n')[0];
+      }
+
+      if (res.indexOf(TRID_PREFIX) > -1) {
+        trid = res.split(TRID_PREFIX)[1].replace(/[^0-9]/g, '');
+      }
+      cb(err, { trid: trid, error: subError});
+    }
+  });
+}
+
+// submit the data and callback the result
+function submitTR(url, callback) {
+  http.get(url, function(res) {
+    var data = '';
+    res.on('data', function (chunk) {
+      data += chunk;
+    });
+    res.on('end', function() {
+      callback(null, data);
+    });
+  }).on('error', function(err) {
+    callback(err);
+  });
 }
