@@ -13,29 +13,23 @@ var router = express.Router();
 var bodyParser = require('body-parser');
 var fs = require('fs');
 var markdown = require( "markdown" ).markdown;
-var querystring = require('querystring');
 
 var dePost = bodyParser.json();
-var traceroute = require('./lib/traceroute');
 var requests = require('./lib/requests');
-// when to refresh checked hosts (10 minutes)
-var RECHECK_SECONDS = 600 * 1000;
-var SUBMIT_URI = 'http://ixmaps.ca/cgi-bin/gather-tr.cgi';
-var TRID_PREFIX = 'new traceroute ID=';
-var ERROR_PREFIX = 'ERROR';
 
-// state variables
-var state = {
-// all the hops that have been logged
-  allHops : {},
-// hosts that have been traced
-  processedHosts : {},
-  // hosts queued to be traced
-  // format: { domain: <domain>, command: <command>, args: <args> }
-  queuedHosts : [],
-  // are we currently processing a queued host?
-  processingHost : false
-};
+// command line args
+process.argv.slice(2).forEach(function(a) {
+  if (a === '-d') {
+    requests.setDebug(true);
+  } else if (a === '-n') {
+    requests.setSubmit(false);
+  } else {
+    console.log('usage:', process.argv[1], '-n (no submit result) -d (debug)');
+    process.exit(1);
+  }
+});
+
+console.log('running', 'debug:', requests.getDebug(), 'submit:', requests.getSubmit());
 
 app.use(express.static('./public'));
 
@@ -54,28 +48,19 @@ router.get('/', function(req, res) {
 
 // retrieve the traced paths
 router.get('/api/traces', function(req, res) {
-  res.json({ allHops: state.allHops});
+  res.json({ allHops: requests.getState().allHops});
 });
 
 // retrieve the traced paths
 router.get('/api/state', function(req, res) {
-  state.now = new Date().getTime();
-  res.json(state);
+  res.json(requests.getState().state);
 });
 
 // queue a host
 router.post('/api/requests', dePost, function(req, res) {
   var incoming = req.body;
   // process individual requests
-  requests.processRequests(incoming, function(err, request) {
-    if (err) {
-      console.log('requests err', err);
-    } else {
-      state.queuedHosts = state.queuedHosts.concat(request);
-      console.log('added', request);
-    }
-  });
-
+  requests.processRequests(incoming, requests.processIncoming);
   res.end();
 });
 
@@ -84,123 +69,4 @@ app.listen(port);
 console.log('Server listening on port ' + port);
 
 // start the queue
-processQueue();
-
-// process a queue item or reset the timer
-function processQueue() {
-  if (state.processingHost) {
-    return;
-  }
-  var nextHost = state.queuedHosts.shift();
-  if (nextHost) {
-    var destination = nextHost.domain;
-    // there's a destination and it hasn't processed or hasn't been processed recently
-    var doProcess = !state.processedHosts[destination] || state.processedHosts[destination] < (new Date().getTime() - RECHECK_SECONDS);
-    console.log('processing', nextHost.command, nextHost.domain, 'doProcess', doProcess, 'remaining', state.queuedHosts.length);
-    if (doProcess) {
-      // used to link hops
-      var traceID = destination + '@' + new Date().getTime();
-
-      // process the hops returned by traceroute
-      var processHops = function(err, hopRes) {
-        var hops = [];
-        console.log('hops', JSON.stringify(hopRes));
-        if (!err) {
-          hopRes.forEach(function(hop) {
-            if (hop) {
-              var ip = Object.keys(hop)[0];
-              hops.push({ ip: ip, roundTrips: hop[ip] });
-            }
-          });
-        } else {
-          console.log('err', err);
-        }
-        doneTrace(err, hops);
-      },
-      // reset state and wait for another process
-      doneTrace = function(err, hops) {
-        console.log('allHops', Object.keys(state.allHops).length);
-        state.processingHost = false;
-        sendTrace(hops, nextHost, function(err, res) {
-          if (err) {
-            console.log('sendTrace failed', err);
-            res = { sendTraceFailed: err};
-          }
-          state.allHops[traceID] = { result: res, hops: hops};
-        });
-
-        setTimeout(processQueue, 100);
-      };
-
-      state.processingHost = new Date().getTime();
-      state.processedHosts[destination] = new Date().getTime();
-    	traceroute.trace(nextHost, processHops);
-      return;
-    }
-  }
-  // nothing to process, wait around
-  setTimeout(processQueue, 100);
-}
-
-// Transmit a completed trace
-function sendTrace(hops, details, cb) {
-  var t = {
-    dest: details.domain,
-    dest_ip: details.dest_ip,
-    submitter:details.submitter,
-    zip_code:details.postalcode,
-    client:'ixnode',
-    cl_ver: 0,
-    privacy:8,
-    timeout:1,
-    protocol:'i',
-    maxhops:255,
-    attempts:4,
-    status:'c'
-  };
-
-  for (var h = 0; h < hops.length; h++) {
-    var cid = (h + 1) + '_1', hop = hops[h];
-    t['status_' + cid] = 'r';
-    t['ip_addr_' + cid] = hop.ip;
-    if (hop.roundTrips) {
-      for (var r = 0; r < hop.roundTrips.length; r++) {
-        var rid = cid + '_' + (r + 1);
-        t['rtt_ms_' + rid] = hop.roundTrips[r];
-      }
-    }
-  }
-
-  t.n_items = hops.length;
-//  console.log('***', JSON.stringify(t, null, 2), querystring.stringify(t));
-  submitTR(SUBMIT_URI + '?' + querystring.stringify(t), function(err, res) {
-    var trid, subError;
-    if (err) {
-      console.log('tr submission failed', err);
-    } else {
-      if (res.indexOf(ERROR_PREFIX) > -1) {
-        subError = res.split(ERROR_PREFIX)[1].split('\n')[0];
-      }
-
-      if (res.indexOf(TRID_PREFIX) > -1) {
-        trid = res.split(TRID_PREFIX)[1].replace(/[^0-9]/g, '');
-      }
-      cb(err, { trid: trid, error: subError});
-    }
-  });
-}
-
-// submit the data and callback the result
-function submitTR(url, callback) {
-  http.get(url, function(res) {
-    var data = '';
-    res.on('data', function (chunk) {
-      data += chunk;
-    });
-    res.on('end', function() {
-      callback(null, data);
-    });
-  }).on('error', function(err) {
-    callback(err);
-  });
-}
+requests.processQueue();
