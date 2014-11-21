@@ -24,7 +24,7 @@ process.argv.slice(2).forEach(function(a) {
   } else if (a === '-y') {
     requests.setSubmit(true);
   } else {
-    console.log('usage:', process.argv[1], '-n (no submit result) -d (debug) -h (help)');
+    console.log('usage:', process.argv[1], '-y (submit result) -d (debug) -h (help)');
     process.exit(1);
   }
 });
