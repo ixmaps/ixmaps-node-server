@@ -21,10 +21,10 @@ var requests = require('./lib/requests');
 process.argv.slice(2).forEach(function(a) {
   if (a === '-d') {
     requests.setDebug(true);
-  } else if (a === '-n') {
-    requests.setSubmit(false);
+  } else if (a === '-y') {
+    requests.setSubmit(true);
   } else {
-    console.log('usage:', process.argv[1], '-n (no submit result) -d (debug)');
+    console.log('usage:', process.argv[1], '-n (no submit result) -d (debug) -h (help)');
     process.exit(1);
   }
 });
