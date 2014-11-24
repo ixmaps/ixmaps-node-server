@@ -53,7 +53,7 @@ router.get('/api/traces', function(req, res) {
 
 // retrieve the traced paths
 router.get('/api/state', function(req, res) {
-  res.json(requests.getState().state);
+  res.json(requests.getState());
 });
 
 // queue a host
