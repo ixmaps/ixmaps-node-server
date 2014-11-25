@@ -21,6 +21,9 @@ var requests = require('./lib/requests');
 process.argv.slice(2).forEach(function(a) {
   if (a === '-d') {
     requests.setDebug(true);
+    requests.setTraceProgressCB(function(data, buf, hops) {
+      console.log('DATA', data, '\nHOPS', hops);
+    });
   } else if (a === '-y') {
     requests.setSubmit(true);
   } else {
