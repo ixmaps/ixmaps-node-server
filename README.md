@@ -9,16 +9,3 @@
 * node index.js
 * open http://localhost:8181 in a browser
 * Install the [Chrome extension](https://github.com/ixmaps/ixmaps-chrome-extension)
-
-# Interfaces
-
-## JSON
-* [traces](/api/traces)
-* [state](/api/state)
-
-## HTML
-
-* [index](/)
-* [Dagre graph](/dagre.html)
-* [Network](/network.html) (FIXME)
-* [Ringmap](/ringmap.html) (FIXME
