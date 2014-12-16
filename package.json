@@ -1,13 +1,14 @@
 {
   "name": "ixmaps-node-server",
   "version": "0.0.9",
-  "scripts" : {
-    "start" : "node index.js"
+  "scripts": {
+    "start": "node index.js"
   },
   "description": "",
   "dependencies": {
     "body-parser": "^1.9.2",
     "express": "^4.9.7",
+    "lodash": "^2.4.1",
     "markdown": "^0.5.0"
   },
   "devDependencies": {}
