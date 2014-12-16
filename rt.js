@@ -1,6 +1,6 @@
-var rawtrace = require('./socket-trace.js');
+var rawtrace = require('./lib/socket-trace.js');
 
 // dest, timeout, interval
-rawtrace({ dest: 'zooid.org', timeout: 9000, interval: 10, count: 1, maxTTL: 32}, function(err, res) {
+rawtrace({ dest: process.argv[2], timeout: 9000, interval: 10, count: 4, maxTTL: 32}, function(err, res) {
   console.log(err, res);
 });
