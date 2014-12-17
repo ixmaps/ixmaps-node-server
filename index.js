@@ -27,7 +27,7 @@ process.argv.slice(2).forEach(function(a) {
       console.log('\nupdate' + (now.getMonth() + 1) + '/' + now.getDate() + ' ' + now.getHours() + ":" + now.getMinutes() + ":" + now.getSeconds() + "." + now.getMilliseconds() + '\n' + Object.keys(details).map(function(k) { return k + ': ' + JSON.stringify(details[k]); }).join('\n'));
     });
     requests.setTraceDoneCB(function(err, update) {
-      console.log('\ndone', update);
+      console.log('\ndone', JSON.stringify(update, null, 2));
     });
   } else if (a === '-y') {
     requests.setSubmit(true);
