@@ -7,7 +7,6 @@
 
 var expect = require('expect.js'), net = require('net');
 
-var orderBuffer = "1 192.168.0.1 3.081 ms 0.462 ms 0.851 ms 0.446 ms\n 2 * * * *\n 3 10.6.0.157 39.422 ms 39.413 ms 40.208 ms 47.178 ms\n 4 * 10.5.128.98 40.068 ms 39.345 ms 39.930 ms\n 5 * 206.223.124.147 39.071 ms 40.362 ms 40.347 ms\n 6 * 201.234.65.134 40.894 ms 41.081 ms 41.836 ms\n 7 200.41.9.39 42.619 ms";
 var parse = require('../lib/parseNix');
 
 describe('parseNix', function () {
@@ -28,7 +27,7 @@ describe('parseNix', function () {
         it('should be a NAT address', function () {
           expect(h1).to.be.equal('192.168.0.1');
         });
-        it('should have timeouts for thes econd hop', function () {
+        it('should have timeouts for the second hop', function () {
           expect(h1).to.eql(h2);
           expect(res[1][h2].every(function(i) { return i === -1; })).to.be(true);
         });
