@@ -9,3 +9,7 @@
 * node index.js
 * open http://localhost:8181 in a browser
 * Install the [Chrome extension](https://github.com/ixmaps/ixmaps-chrome-extension)
+
+# Testing
+
+Install mocha with `npm install -g mocha` then type `npm test`.
