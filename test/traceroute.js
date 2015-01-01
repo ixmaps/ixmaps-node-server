@@ -26,7 +26,7 @@ describe('parseNix', function () {
         ].join('\n');
       var res = parse.parse(buffer, 4);
 
-      expect(res.length).to.be(5);
+      expect(res.length).to.be(4);
 
       describe('validate addresses', function () {
         it('should be a NAT address', function () {
@@ -34,15 +34,10 @@ describe('parseNix', function () {
             return s.ip === NAT;
           })).to.be(true);
         });
-        it('should have timeouts for the second hop', function () {
-          expect(res[1].every(function(s) {
-            return s.rtt === -1 && s.ip === NAT;
-          })).to.be(true);
-        });
       });
       describe('validate hops', function () {
         it('should have four results for regular hops', function () {
-          expect(_.first(res, 3).every(function(h) {
+          expect(_.first(res, 2).every(function(h) {
             return h.length === 4;
           })).to.be(true);
         });
@@ -59,14 +54,14 @@ describe('parseNix', function () {
       describe('handle error conditions', function() {
         // missing values will be padded with -1
         it('should ignore error conditions', function() {
-          expect(res[3].length).to.be(3);
+          expect(res[2].length).to.be(3);
         });
       });
       describe('handle router change', function() {
         it('should switch to the new address', function() {
-          expect(res[4].length).to.be(3);
-          expect(res[4][0].ip).to.be('206.80.192.221');
-          expect(res[4][1].ip).to.be('216.161.182.121');
+          expect(res[3].length).to.be(3);
+          expect(res[3][0].ip).to.be('206.80.192.221');
+          expect(res[3][1].ip).to.be('216.161.182.121');
         });
       });
     });
