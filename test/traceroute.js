@@ -8,7 +8,7 @@
 
 var expect = require('expect.js'), net = require('net'), _ = require('lodash');
 
-var parse = require('../lib/parseNix');
+var parser = require('../lib/parseNix');
 
 var NAT = '192.168.0.1';
 
@@ -30,7 +30,7 @@ describe('parseNix', function () {
       // router address change, one RTT per two IPs
         ' 5 206.80.192.221 127.569 ms 216.161.182.121  185.214 ms *'
         ].join('\n');
-      var res = parse.parse(buffer, 4);
+      var res = parser.parse(buffer, 4);
 
       expect(res.length).to.be(5);
 
