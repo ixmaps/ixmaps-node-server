@@ -1,5 +1,4 @@
-// # Mocha tests for parsing *Nix (Linux, BSD, MacOS)
-// examples from http://www.exit109.com/~jeremy/news/providers/traceroute.html#reading
+// # Mocha tests for tr submission
 
 /* jslint node: true */
 /* global describe, it */
